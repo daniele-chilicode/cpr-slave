@@ -2,9 +2,12 @@
 
 use App\Models\Post;
 use App\Models\User;
+use App\Http\Controllers\PostController;
 use Illuminate\Foundation\Testing\RefreshDatabase;
  
 uses(RefreshDatabase::class);
+// covers(PostController::class);
+mutates(PostController::class);
 
 test('can get posts index', function () {
     $user = User::factory()->create();
@@ -12,12 +15,14 @@ test('can get posts index', function () {
     $response = $this->actingAs($user)->get(route('posts.index'));
     
     $response->assertOk();
+    $response->assertViewIs('posts.index');
 });
 
 test('can get post create', function () {
     $user = User::factory()->create();
     $response = $this->actingAs($user)->get(route('posts.create'));
     $response->assertOk();
+    $response->assertViewIs('posts.create');
 });
 
 test('can store post', function () {
@@ -25,12 +30,13 @@ test('can store post', function () {
     Post::factory()->count(3)->create();
     expect(Post::count())->toBe(3);
 
-    $this->actingAs($user)->post(route('posts.store'), [
+    $response = $this->actingAs($user)->post(route('posts.store'), [
         'title' => 'post title',
         'content' => 'post content',
     ]);
 
     expect(Post::count())->toBe(4);
+    $response->assertRedirect(route('posts.index'));
 });
 
 test('can get post show', function () {
@@ -39,6 +45,7 @@ test('can get post show', function () {
     $response = $this->actingAs($user)->get(route('posts.show', $post));
     
     $response->assertOk();
+    $response->assertViewIs('posts.show');
 });
 
 test('can get post edit page', function () {
@@ -46,6 +53,7 @@ test('can get post edit page', function () {
     $post = Post::factory()->create();
     $response = $this->actingAs($user)->get(route('posts.edit', $post));
     $response->assertOk();
+    $response->assertViewIs('posts.edit');
 });
 
 test('can update post', function () {
@@ -55,7 +63,7 @@ test('can update post', function () {
         'content' => 'old content',
     ]);
     
-    $this->actingAs($user)->patch(route('posts.update', $post), [
+    $response = $this->actingAs($user)->patch(route('posts.update', $post), [
         'title' => 'new title',
         'content' => 'new content',
     ]);
@@ -63,6 +71,7 @@ test('can update post', function () {
     $post->refresh();
     expect($post->title)->toBe('new title');
     expect($post->content)->toBe('new content');
+    $response->assertRedirect(route('posts.show', $post));
 });
 
 test('can delete post', function () {
@@ -70,7 +79,8 @@ test('can delete post', function () {
     $post = Post::factory()->create();
     expect(Post::count())->toBe(1);
     
-    $this->actingAs($user)->delete(route('posts.destroy', $post));
+    $response = $this->actingAs($user)->delete(route('posts.destroy', $post));
     
     expect(Post::count())->toBe(0);
+    $response->assertRedirect(route('posts.index'));
 });
