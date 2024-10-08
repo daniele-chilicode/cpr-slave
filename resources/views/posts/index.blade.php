@@ -1,0 +1,1 @@
+<h1>posts index page</h1>
